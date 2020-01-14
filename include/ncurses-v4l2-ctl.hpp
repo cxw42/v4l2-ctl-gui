@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <stdio.h>
 #include <ncurses.h>
 #include <sys/types.h>
@@ -28,9 +29,13 @@ char byebyestring[] = "BYE BYE!";
 
 class NCurses_v4l2_ctl{
 public:
-	NCurses_v4l2_ctl(){
+	//! Set true when the user hits ESC
+	bool should_exit;
+
+	NCurses_v4l2_ctl() : should_exit(false) {
 		//! start ncurses mode
 		initscr();
+		ESCDELAY = 50;  // only 50 ms delay after ESC, so ESC-to-exit is more responsive
 		//! Start color functionality
 		start_color();
 		init_pair(CYAN, COLOR_CYAN, COLOR_BLACK);
@@ -44,6 +49,8 @@ public:
 		print(0,0,cols,"-");
 		printMessage(1,0,welcomestring);
 		print(2,0,cols,"-");
+
+		initialize();
 	}
 
 	~NCurses_v4l2_ctl(){
@@ -73,6 +80,9 @@ public:
 			return false;
 		for(auto str:out){
 			vector<string> singleWords = parseForWords(str);
+			if(singleWords.size() < 4) {
+				continue;
+			}
 			vector<string> command;
 			command.push_back(singleWords[0]);
 			command.insert(command.end(), singleWords.begin()+3, singleWords.end());
@@ -86,6 +96,9 @@ public:
 
 	void editValue(){
 		menu(commandVerbose,chosenCmd,3,0);
+		if(should_exit) {
+			return;
+		}
 		echo();
 		printMessage(3,0,valuestring,CYAN);
 		mvgetnstr(3,strlen(valuestring),inputstring,30);
@@ -220,6 +233,9 @@ private:
 			refresh();
 			wrefresh(win);
 		}
+		if(c == 27) {
+			should_exit = true;
+		}
 		unpost_menu(menu);
 		free_menu(menu);
 		free_item(items[0]);
@@ -282,6 +298,9 @@ private:
 			refresh();
 			wrefresh(win);
 		}
+		if(c == 27) {
+			should_exit = true;
+		}
 		unpost_menu(menu);
 		free_menu(menu);
 		free_item(items[0]);
@@ -343,6 +362,9 @@ private:
 			refresh();
 			wrefresh(win);
 			if(success) break;
+		}
+		if(c == 27) {
+			should_exit = true;
 		}
 		unpost_menu(menu);
 		free_menu(menu);

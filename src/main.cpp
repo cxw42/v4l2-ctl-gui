@@ -2,12 +2,14 @@
 
 int main() {
 	NCurses_v4l2_ctl curses;
-	curses.initialize();
-	char cmd;
-	do{
-		noecho();
-		if(curses.parseCommands())
+	while(!curses.should_exit) {
+		//noecho();
+		if(!curses.parseCommands()) {
+			break;	// no controls => just exit, not infinite loop.
+		}
+		if(!curses.should_exit) {
 			curses.editValue();
-	}while( cmd != 27);
+		}
+	}
 	return 0;
 }
